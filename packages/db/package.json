@@ -1,0 +1,24 @@
+{
+  "name": "@undercut/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts",
+    "./migrate": "./src/migrate.ts"
+  },
+  "scripts": {
+    "migrate": "tsx --env-file-if-exists=../../.env src/bin/migrate.ts",
+    "admin": "tsx --env-file-if-exists=../../.env src/bin/admin.ts",
+    "dev": "tsx --env-file-if-exists=../../.env src/bin/scheduler.ts",
+    "typecheck": "tsc -p tsconfig.json",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@undercut/core": "workspace:*",
+    "postgres": "^3.4.9"
+  },
+  "devDependencies": {
+    "vitest": "^5.0.5"
+  }
+}

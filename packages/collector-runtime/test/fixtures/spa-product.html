@@ -1,0 +1,22 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>Ocean View Suite | Resort</title>
+  </head>
+  <body>
+    <main>
+      <h1>Ocean View Suite</h1>
+      <p>
+        Adults-only, all-inclusive. Rates update throughout the day, so the price below is rendered client-side after
+        the availability API responds, exactly like the travel sites that motivated this project.
+      </p>
+      <div id="rate"></div>
+    </main>
+    <script>
+      setTimeout(() => {
+        document.getElementById('rate').innerHTML = '<span class="nightly">from $1,299/night</span>';
+      }, 300);
+    </script>
+  </body>
+</html>

@@ -1,0 +1,28 @@
+{
+  "name": "undercut",
+  "private": true,
+  "type": "module",
+  "packageManager": "pnpm@11.0.9",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "db:up": "docker compose up -d --wait postgres",
+    "db:down": "docker compose down",
+    "db:migrate": "pnpm --filter @undercut/db migrate",
+    "admin": "pnpm --filter @undercut/db admin",
+    "dev": "pnpm --parallel --filter @undercut/web --filter @undercut/db --filter @undercut/worker run dev",
+    "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
+    "test": "pnpm -r test",
+    "build": "pnpm -r build",
+    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.0",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3",
+    "playwright": "^1.64.1",
+    "@undercut/db": "workspace:*",
+    "@undercut/core": "workspace:*"
+  }
+}

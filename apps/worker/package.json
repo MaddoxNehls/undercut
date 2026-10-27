@@ -1,0 +1,20 @@
+{
+  "name": "@undercut/worker",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch --env-file-if-exists=../../.env src/main.ts",
+    "start": "node --env-file-if-exists=../../.env dist/main.js",
+    "build": "tsup",
+    "typecheck": "tsc -p tsconfig.json"
+  },
+  "dependencies": {
+    "@undercut/collector-runtime": "workspace:*",
+    "@undercut/core": "workspace:*",
+    "playwright": "^1.64.1"
+  },
+  "devDependencies": {
+    "tsup": "^9.0.0"
+  }
+}

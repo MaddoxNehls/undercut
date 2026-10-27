@@ -7,3 +7,8 @@ __pycache__/
 target/
 .next/
 dist/
+.turbo/
+*.tsbuildinfo
+test-results/
+playwright-report/
+next-env.d.ts
