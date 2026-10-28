@@ -1,4 +1,6 @@
-import { schedulerTick } from '@undercut/db';
+import { dispatchDeliveries, healTick, schedulerTick } from '@undercut/db';
+import { channelsFromEnv } from '@undercut/notify';
+import { llmFromEnv } from '@undercut/llm';
 import { apiError } from '@/lib/collector-api';
 import { db } from '@/lib/db';
 
@@ -8,7 +10,10 @@ export async function GET(request: Request): Promise<Response> {
   if (!secret || request.headers.get('authorization') !== `Bearer ${secret}`) {
     return apiError(401, 'unauthenticated', 'invalid cron secret');
   }
-  return Response.json(await schedulerTick(db()));
+  const tick = await schedulerTick(db());
+  const healed = await healTick(db(), { llm: llmFromEnv() });
+  const deliveries = await dispatchDeliveries(db(), channelsFromEnv(), { appUrl: new URL(request.url).origin });
+  return Response.json({ ...tick, healed, deliveries });
 }
 
 export const POST = GET;

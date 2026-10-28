@@ -15,7 +15,8 @@
     "typecheck": "pnpm -r typecheck && tsc -p tsconfig.json",
     "test": "pnpm -r test",
     "build": "pnpm -r build",
-    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts"
+    "smoke": "tsx --env-file-if-exists=.env scripts/smoke.ts",
+    "demo": "tsx --env-file-if-exists=.env scripts/demo.ts"
   },
   "devDependencies": {
     "@types/node": "^24.0.0",
@@ -23,6 +24,10 @@
     "typescript": "~6.0.3",
     "playwright": "^1.64.1",
     "@undercut/db": "workspace:*",
-    "@undercut/core": "workspace:*"
+    "@undercut/core": "workspace:*",
+    "@undercut/collector-runtime": "workspace:*",
+    "@undercut/llm": "workspace:*",
+    "@undercut/notify": "workspace:*",
+    "@undercut/extraction": "workspace:*"
   }
 }

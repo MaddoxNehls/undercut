@@ -9,8 +9,9 @@ try {
 
 const config: NextConfig = {
   // Workspace packages ship TypeScript source; Next compiles them with the app.
-  transpilePackages: ['@undercut/core', '@undercut/db'],
-  serverExternalPackages: ['postgres'],
+  transpilePackages: ['@undercut/core', '@undercut/db', '@undercut/extraction', '@undercut/llm', '@undercut/collector-runtime', '@undercut/notify'],
+  // Native/binary-heavy server deps load from node_modules at runtime instead of being bundled.
+  serverExternalPackages: ['postgres', 'playwright', 'playwright-core', 'nodemailer', 'web-push'],
 };
 
 export default config;

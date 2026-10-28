@@ -2,6 +2,7 @@
 
 import { formatPrice } from '@undercut/core';
 import { useEffect, useId, useRef, useState, type KeyboardEvent, type PointerEvent } from 'react';
+import { stepAfterPath, timeDomain, TIME_STEPS } from '@/lib/chart-scale';
 
 export interface ChartPoint {
   /** Epoch milliseconds of the observation's as-of time. */
@@ -26,10 +27,9 @@ const HEIGHT = 300;
 const M = { top: 16, right: 84, bottom: 44, left: 64 };
 const SERIES_COLORS = ['var(--series-1)', 'var(--series-2)', 'var(--series-3)'] as const;
 const MAX_SERIES = SERIES_COLORS.length;
-const TIME_STEPS = [5, 15, 30, 60, 180, 360, 720, 1440, 2880, 10080, 20160, 43200].map((m) => m * 60_000);
 
 /**
- * Price history as a line per variant over time. Hover (or arrow keys) snaps a crosshair to the
+ * Price history as a step line per variant over time (a price holds until the next check). Hover (or arrow keys) snaps a crosshair to the
  * nearest check and lists every variant's price there; failed checks sit as ticks under the axis.
  */
 export function PriceChart(props: { series: readonly ChartSeries[]; failures: readonly ChartFailure[]; currency: string | null }) {
@@ -78,13 +78,7 @@ function Plot({ series, failures, currency, width }: {
     );
   }
 
-  // X: span of every check, padded so a single check still has room.
-  const allTimes = [...times, ...failures.map((f) => f.t)];
-  let [x0, x1] = [Math.min(...allTimes), Math.max(...allTimes)];
-  if (x1 - x0 < 60 * 60_000) {
-    const mid = (x0 + x1) / 2;
-    [x0, x1] = [mid - 30 * 60_000, mid + 30 * 60_000];
-  }
+  const [x0, x1] = timeDomain([...times, ...failures.map((f) => f.t)]);
   const prices = allPoints.map((p) => p.price);
   const yTicks = niceTicks(Math.min(...prices), Math.max(...prices));
   const [y0, y1] = [yTicks[0]!, yTicks[yTicks.length - 1]!];
@@ -173,7 +167,7 @@ function Plot({ series, failures, currency, width }: {
         )}
         {shown.map((s, i) => (
           <g key={s.id}>
-            <path d={linePath(s.points, x, y)} fill="none" stroke={SERIES_COLORS[i]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
+            <path d={stepAfterPath(s.points, x, y)} fill="none" stroke={SERIES_COLORS[i]} strokeWidth={2} strokeLinejoin="round" strokeLinecap="round" />
             {(dense ? s.points.slice(-1) : s.points).map((p) => (
               <circle key={p.t} cx={x(p.t)} cy={y(p.price)} r={4} fill={SERIES_COLORS[i]} stroke="var(--surface)" strokeWidth={2} />
             ))}
@@ -257,14 +251,10 @@ function FailureKey({ color, label }: { color: string; label: string }) {
   );
 }
 
-function linePath(points: readonly ChartPoint[], x: (t: number) => number, y: (v: number) => number): string {
-  return points.map((p, i) => `${i === 0 ? 'M' : 'L'}${x(p.t).toFixed(1)},${y(p.price).toFixed(1)}`).join('');
-}
-
 function areaPath(points: readonly ChartPoint[], x: (t: number) => number, y: (v: number) => number, base: number): string {
   const first = points[0]!;
   const last = points[points.length - 1]!;
-  return `${linePath(points, x, y)}L${x(last.t).toFixed(1)},${base}L${x(first.t).toFixed(1)},${base}Z`;
+  return `${stepAfterPath(points, x, y)}L${x(last.t).toFixed(1)},${base}L${x(first.t).toFixed(1)},${base}Z`;
 }
 
 function nearestIndex(sorted: readonly number[], t: number): number | null {

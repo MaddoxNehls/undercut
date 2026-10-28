@@ -5,6 +5,7 @@ import type {
   ObservationStatus,
   PriceKind,
   PricePeriod,
+  PriceMeaning,
   RouteOverride,
 } from '@undercut/core';
 
@@ -19,6 +20,9 @@ export interface Watch {
   intervalMinutes: number;
   routeOverride: RouteOverride;
   active: boolean;
+  meaning: PriceMeaning;
+  /** Set when self-healing proposed a selector that needs the user's confirmation. */
+  reviewReason: string | null;
   createdAt: Date;
   updatedAt: Date;
 }

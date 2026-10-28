@@ -8,11 +8,11 @@ import { z } from 'zod';
 export const PROTOCOL_VERSION = 1;
 export const MAX_LEASE_WAIT_MS = 30_000;
 
-const extractionRule = z.object({
-  kind: z.literal('selector'),
-  selector: z.string().min(1),
-  attribute: z.string().min(1).optional(),
-});
+export const extractionRuleSchema = z.discriminatedUnion('kind', [
+  z.object({ kind: z.literal('selector'), selector: z.string().min(1).max(500), attribute: z.string().min(1).max(60).optional() }),
+  z.object({ kind: z.literal('json-ld'), field: z.enum(['price', 'lowPrice']) }),
+]);
+const extractionRule = extractionRuleSchema;
 
 export const leaseRequestSchema = z.object({
   /** How long the server may hold the request open waiting for work (long-poll). */
@@ -45,6 +45,44 @@ const priceSchema = z.object({
   period: z.enum(['night', 'day', 'week', 'month', 'year', 'person']).optional(),
 });
 
+export const priceMeaningSchema = z.enum(['current', 'was', 'per_unit', 'total']);
+
+/** One price-looking element of a page, as shown to the LLM: compact and addressable. */
+export const digestNodeSchema = z.object({
+  id: z.string().max(12),
+  css: z.string().max(300),
+  text: z.string().max(120),
+  /** Semantic hints from the element and its ancestors: classes, ids, itemprop, tag names. */
+  hints: z.array(z.string().max(40)).max(12),
+  /** Nearby label text such as "per night", "total", "was". */
+  label: z.string().max(80).optional(),
+  /** Rendered struck-through (<del>, <s>, line-through): almost always a "was" price. */
+  struck: z.boolean(),
+});
+export type DigestNode = z.infer<typeof digestNodeSchema>;
+
+export const candidateSourceSchema = z.enum(['json-ld', 'microdata', 'opengraph', 'class-pattern', 'llm']);
+export type CandidateSource = z.infer<typeof candidateSourceSchema>;
+
+/** A proposed extraction rule, already validated against the captured DOM (`price` is what it read). */
+export const priceCandidateSchema = z.object({
+  rule: extractionRuleSchema,
+  source: candidateSourceSchema,
+  meaning: priceMeaningSchema,
+  confidence: z.number().min(0).max(1),
+  price: priceSchema.nullable(),
+  text: z.string().max(200).optional(),
+  rationale: z.string().max(300).optional(),
+});
+export type PriceCandidate = z.infer<typeof priceCandidateSchema>;
+
+/** Attached to a parse_error so the server can heal the selector without re-fetching the page. */
+export const healingPayloadSchema = z.object({
+  digest: z.array(digestNodeSchema).max(80),
+  candidates: z.array(priceCandidateSchema).max(20),
+});
+export type HealingPayload = z.infer<typeof healingPayloadSchema>;
+
 const captureMeta = {
   leaseId: z.uuid(),
   asOf: z.iso.datetime(),
@@ -57,7 +95,13 @@ const captureMeta = {
 export const jobResultSchema = z.discriminatedUnion('status', [
   z.object({ status: z.literal('ok'), price: priceSchema, snippet: z.string().max(2000), ...captureMeta }),
   z.object({ status: z.literal('blocked'), reason: z.string().max(200), snippet: z.string().max(2000), ...captureMeta }),
-  z.object({ status: z.literal('parse_error'), reason: z.string().max(200), snippet: z.string().max(2000), ...captureMeta }),
+  z.object({
+    status: z.literal('parse_error'),
+    reason: z.string().max(200),
+    snippet: z.string().max(2000),
+    healing: healingPayloadSchema.optional(),
+    ...captureMeta,
+  }),
   /** The attempt failed for reasons unrelated to the site's verdict (timeout, DNS, 5xx): retry. */
   z.object({ status: z.literal('error'), leaseId: z.uuid(), error: z.string().max(1000) }),
   /** robots.txt disallows the URL: don't retry, don't record a price. */

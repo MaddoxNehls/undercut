@@ -1,0 +1,13 @@
+{
+  "note": "Hand-authored in the recorded replay format (no live LLM call was made). Node ids match buildDigest() of the live books.toscrape.com A Light in the Attic page, captured 2026-10-27.",
+  "model": "hand-authored",
+  "responses": {
+    "discover/books.toscrape.com": {
+      "candidates": [
+        { "nodeId": "n1", "meaning": "current", "confidence": 0.94, "rationale": "Headline price under the product title (class price_color)." },
+        { "nodeId": "n3", "meaning": "current", "confidence": 0.55, "rationale": "Price incl. tax in the product information table; same value, less prominent." },
+        { "nodeId": "n4", "meaning": "total", "confidence": 0.05, "rationale": "Tax amount, not a price to track." }
+      ]
+    }
+  }
+}

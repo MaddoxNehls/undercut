@@ -1,6 +1,6 @@
-import type postgres from 'postgres';
-import { domainOf, type CollectorKind, type ExtractionRule, type ObservationStatus, type RouteOverride } from '@undercut/core';
-import { inTransaction, type Db } from './client';
+import { domainOf, type CollectorKind, type ExtractionRule, type ObservationStatus, type PriceMeaning, type RouteOverride } from '@undercut/core';
+import { inTransaction, toJson, type Db } from './client';
+import { recordSelectorChange, type SelectorSource } from './selectors';
 import { toNumberOrNull, type Domain, type Watch, type WatchVariant } from './types';
 
 export interface WatchInput {
@@ -12,17 +12,12 @@ export interface WatchInput {
   intervalMinutes: number;
   routeOverride: RouteOverride;
   active?: boolean | undefined;
+  meaning?: PriceMeaning | undefined;
+  /** Who chose the extraction rule; recorded in the selector history. Defaults to 'user'. */
+  ruleSource?: SelectorSource | undefined;
 }
 
 export const DEFAULT_VARIANT_LABEL = 'Default';
-
-/**
- * The rule as a plain JSON value (no `undefined` fields) for `sql.json`. Passing a pre-stringified
- * value instead would be serialized again and stored as a JSON string, not an object.
- */
-function asJson(rule: ExtractionRule): postgres.JSONValue {
-  return rule.attribute ? { kind: rule.kind, selector: rule.selector, attribute: rule.attribute } : { kind: rule.kind, selector: rule.selector };
-}
 
 async function ensureDomain(db: Db, domain: string): Promise<void> {
   await db`INSERT INTO domains (domain) VALUES (${domain}) ON CONFLICT (domain) DO NOTHING`;
@@ -34,13 +29,22 @@ export async function createWatch(db: Db, input: WatchInput): Promise<Watch> {
   return inTransaction(db, async (tx) => {
     await ensureDomain(tx, domain);
     const [watch] = await tx<Watch[]>`
-      INSERT INTO watches (name, url, domain, extraction, currency, locale, interval_minutes, route_override, active)
-      VALUES (${input.name}, ${input.url}, ${domain}, ${tx.json(asJson(input.extraction))},
+      INSERT INTO watches (name, url, domain, extraction, currency, locale, interval_minutes, route_override, active, meaning)
+      VALUES (${input.name}, ${input.url}, ${domain}, ${tx.json(toJson(input.extraction))},
               ${input.currency ?? null}, ${input.locale ?? null}, ${input.intervalMinutes},
-              ${input.routeOverride}, ${input.active ?? true})
+              ${input.routeOverride}, ${input.active ?? true}, ${input.meaning ?? 'current'})
       RETURNING *`;
     if (!watch) throw new Error('insert returned no row');
     await tx`INSERT INTO watch_variants (watch_id, label) VALUES (${watch.id}, ${DEFAULT_VARIANT_LABEL})`;
+    await recordSelectorChange(tx, {
+      watchId: watch.id,
+      oldRule: null,
+      newRule: input.extraction,
+      meaning: watch.meaning,
+      trigger: 'created',
+      source: input.ruleSource ?? 'user',
+      status: 'applied',
+    });
     return watch;
   });
 }
@@ -49,15 +53,28 @@ export async function updateWatch(db: Db, id: string, input: WatchInput): Promis
   const domain = domainOf(input.url);
   return inTransaction(db, async (tx) => {
     await ensureDomain(tx, domain);
+    const [before] = await tx<Watch[]>`SELECT * FROM watches WHERE id = ${id} FOR UPDATE`;
+    if (!before) return null;
     const [watch] = await tx<Watch[]>`
       UPDATE watches SET
         name = ${input.name}, url = ${input.url}, domain = ${domain},
-        extraction = ${tx.json(asJson(input.extraction))},
+        extraction = ${tx.json(toJson(input.extraction))},
         currency = ${input.currency ?? null}, locale = ${input.locale ?? null},
         interval_minutes = ${input.intervalMinutes}, route_override = ${input.routeOverride},
-        active = ${input.active ?? true}, updated_at = now()
+        active = ${input.active ?? true}, meaning = ${input.meaning ?? before.meaning}, updated_at = now()
       WHERE id = ${id}
       RETURNING *`;
+    if (watch && JSON.stringify(toJson(before.extraction)) !== JSON.stringify(toJson(watch.extraction))) {
+      await recordSelectorChange(tx, {
+        watchId: id,
+        oldRule: before.extraction,
+        newRule: watch.extraction,
+        meaning: watch.meaning,
+        trigger: 'edited',
+        source: input.ruleSource ?? 'user',
+        status: 'applied',
+      });
+    }
     return watch ?? null;
   });
 }

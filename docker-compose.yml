@@ -17,5 +17,23 @@ services:
       timeout: 3s
       retries: 30
 
+  # Dev mail catcher for alert emails: web UI on 5451, SMTP on 5452.
+  mailpit:
+    image: axllent/mailpit:v1.27
+    container_name: undercut-mailpit
+    ports:
+      - "5451:8025"
+      - "5452:1025"
+
+  # Self-hosted ntfy for push-to-phone alerts in dev; never the public ntfy.sh.
+  ntfy:
+    image: binwiederhier/ntfy:v2.14.0
+    container_name: undercut-ntfy
+    command: serve
+    environment:
+      NTFY_BASE_URL: http://localhost:5453
+    ports:
+      - "5453:80"
+
 volumes:
   undercut-pg:

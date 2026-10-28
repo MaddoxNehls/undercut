@@ -25,8 +25,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
               <Link href="/" className="hover:text-ink">
                 Watches
               </Link>
+              <Link href="/alerts" className="hover:text-ink">
+                Alerts
+              </Link>
               <Link href="/devices" className="hover:text-ink">
                 Devices
+              </Link>
+              <Link href="/settings/notifications" className="hover:text-ink">
+                Settings
               </Link>
             </div>
             <Link

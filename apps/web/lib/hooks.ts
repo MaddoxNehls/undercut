@@ -1,7 +1,8 @@
 import type { ObservationHook } from '@undercut/core';
+import { alertHook } from '@undercut/db';
+import { db } from './db';
 
-/**
- * Post-commit observation hooks. M4 registers the alert engine here (rule evaluation, then
- * `shouldRealert` hysteresis, then channel delivery). Empty in M1-M2.
- */
-export const observationHooks: readonly ObservationHook[] = [];
+/** Post-commit observation hooks: the alert engine evaluates rules and queues deliveries. */
+export function observationHooks(): readonly ObservationHook[] {
+  return [alertHook(db())];
+}

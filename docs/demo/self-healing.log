@@ -1,0 +1,34 @@
+watch f99df6a4-cdbf-46ea-81d6-b20a6d8137a0
+1) v1 page
+  job 0743f9f2 ok {"url":"http://127.0.0.1:5450/pack","price":129.99,"currency":"USD"}
+2) the site ships a redesign (v2): three checks
+  job d4101d21 parse_error {"url":"http://127.0.0.1:5450/pack","reason":"selector_not_found"}
+  job 2b0352bf parse_error {"url":"http://127.0.0.1:5450/pack","reason":"selector_not_found"}
+  job 69226a0b parse_error {"url":"http://127.0.0.1:5450/pack","reason":"selector_not_found"}
+3) heal tick (LLM served from a hand-authored replay fixture)
+[
+  {
+    watchId: 'f99df6a4-cdbf-46ea-81d6-b20a6d8137a0',
+    action: 'apply',
+    reason: 'new value 129.99 is within 0.0% of the last known 129.99',
+    newRule: { kind: 'selector', selector: '[data-testid="buybox-amount"]' },
+    usedLlm: true
+  }
+] llm usage { calls: 1, liveCalls: 0, inputTokens: 0, outputTokens: 0 }
+4) confirming check with the healed selector
+  job bf3dd8dd ok {"url":"http://127.0.0.1:5450/pack","price":129.99,"currency":"USD"}
+┌─────────┬───────────┬────────┬───────────┬───────────────────────────────────────────────────┬──────────────────────────────────────────────────────────────────────┬──────────┬──────────┐
+│ (index) │ trigger   │ source │ status    │ from                                              │ to                                                                   │ oldValue │ newValue │
+├─────────┼───────────┼────────┼───────────┼───────────────────────────────────────────────────┼──────────────────────────────────────────────────────────────────────┼──────────┼──────────┤
+│ 0       │ 'healed'  │ 'llm'  │ 'applied' │ '{"kind":"selector","selector":"span.price-now"}' │ '{"kind":"selector","selector":"[data-testid=\\"buybox-amount\\"]"}' │ 129.99   │ 129.99   │
+│ 1       │ 'created' │ 'user' │ 'applied' │ null                                              │ '{"kind":"selector","selector":"span.price-now"}'                    │ null     │ null     │
+└─────────┴───────────┴────────┴───────────┴───────────────────────────────────────────────────┴──────────────────────────────────────────────────────────────────────┴──────────┴──────────┘
+┌─────────┬───────────────┬────────────┬──────────────────────┐
+│ (index) │ status        │ price      │ reason               │
+├─────────┼───────────────┼────────────┼──────────────────────┤
+│ 0       │ 'ok'          │ '129.9900' │ null                 │
+│ 1       │ 'parse_error' │ null       │ 'selector_not_found' │
+│ 2       │ 'parse_error' │ null       │ 'selector_not_found' │
+│ 3       │ 'parse_error' │ null       │ 'selector_not_found' │
+│ 4       │ 'ok'          │ '129.9900' │ null                 │
+└─────────┴───────────────┴────────────┴──────────────────────┘

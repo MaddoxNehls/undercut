@@ -1,7 +1,7 @@
 'use server';
 
-import { isHttpUrl } from '@undercut/core';
-import { createWatch, deleteWatch, enqueueNow, getWatch, updateWatch, type WatchInput } from '@undercut/db';
+import { isHttpUrl, ruleFromText } from '@undercut/core';
+import { createWatch, decideProposal, deleteWatch, enqueueNow, getWatch, updateWatch, type WatchInput } from '@undercut/db';
 import { revalidatePath } from 'next/cache';
 import { redirect } from 'next/navigation';
 import { z } from 'zod';
@@ -19,7 +19,7 @@ const optional = (schema: z.ZodString) =>
 const watchFormSchema = z.object({
   name: z.string().trim().min(1, 'Give the watch a name.').max(120, 'Keep the name under 120 characters.'),
   url: z.string().trim().refine(isHttpUrl, 'Enter a full URL starting with http:// or https://.'),
-  selector: z.string().trim().min(1, 'Enter the CSS selector of the price element.').max(500),
+  selector: z.string().trim().min(1, 'Enter the CSS selector of the price element, or json-ld.').max(500),
   attribute: optional(z.string().max(60)),
   currency: optional(
     z
@@ -57,7 +57,7 @@ function parse(form: FormData): { input: WatchInput } | { state: WatchFormState 
     return { state: { errors, values } };
   }
   const { selector, attribute, ...rest } = parsed.data;
-  return { input: { ...rest, extraction: { kind: 'selector', selector, attribute } } };
+  return { input: { ...rest, extraction: ruleFromText(selector, attribute) } };
 }
 
 export async function createWatchAction(_prev: WatchFormState | null, form: FormData): Promise<WatchFormState> {
@@ -106,4 +106,11 @@ export async function deleteWatchAction(id: string): Promise<void> {
   await deleteWatch(db(), id);
   revalidatePath('/');
   redirect('/');
+}
+
+export async function decideProposalAction(watchId: string, historyId: string, accept: boolean): Promise<void> {
+  if (await decideProposal(db(), historyId, accept)) {
+    if (accept) await enqueueNow(db(), watchId);
+  }
+  revalidatePath(`/watches/${watchId}`);
 }

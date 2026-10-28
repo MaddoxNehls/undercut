@@ -37,3 +37,36 @@ export {
 export { listObservations, priceHistory, type ObservationLogEntry, type PricePoint } from './observations';
 export { listDomainSummaries, type DomainSummary, type KindStats } from './domains';
 export { schedulerTick, type TickResult } from './scheduler';
+export { toJson } from './client';
+export {
+  recordSelectorChange,
+  listSelectorHistory,
+  decideProposal,
+  type SelectorChange,
+  type SelectorSource,
+  type SelectorTrigger,
+  type SelectorStatus,
+} from './selectors';
+export { healTick, type HealOutcome } from './healing';
+export { createExtractionSession, getExtractionSession, type ExtractionSession } from './extraction-sessions';
+export {
+  listAlertRules,
+  createAlertRule,
+  deleteAlertRule,
+  setAlertRuleActive,
+  toAlertRule,
+  getNotificationSettings,
+  saveNotificationSettings,
+  savePushSubscription,
+  deletePushSubscription,
+  countPushSubscriptions,
+  evaluateAlerts,
+  alertHook,
+  listAlerts,
+  dispatchDeliveries,
+  type AlertRuleRow,
+  type AlertRuleKind,
+  type NotificationSettings,
+  type AlertListEntry,
+  type DispatchResult,
+} from './alerts';

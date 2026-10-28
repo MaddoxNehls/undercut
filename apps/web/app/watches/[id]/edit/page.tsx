@@ -1,3 +1,4 @@
+import { ruleToText } from '@undercut/core';
 import { getWatch } from '@undercut/db';
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
@@ -25,8 +26,8 @@ export default async function EditWatchPage({ params }: { params: Promise<{ id: 
         initial={{
           name: watch.name,
           url: watch.url,
-          selector: watch.extraction.selector,
-          attribute: watch.extraction.attribute ?? '',
+          selector: ruleToText(watch.extraction),
+          attribute: watch.extraction.kind === 'selector' ? (watch.extraction.attribute ?? '') : '',
           currency: watch.currency ?? '',
           locale: watch.locale ?? '',
           intervalMinutes: String(watch.intervalMinutes),

@@ -1,0 +1,12 @@
+{
+  "note": "Hand-authored in the recorded replay format (no live LLM call was made). Node ids match the healing digest of shop-v2.html.",
+  "model": "hand-authored",
+  "responses": {
+    "heal/127.0.0.1": {
+      "candidates": [
+        { "nodeId": "n2", "meaning": "current", "confidence": 0.92, "rationale": "Buy-box amount labelled \"Our price\" (data-testid=buybox-amount)." },
+        { "nodeId": "n3", "meaning": "was", "confidence": 0.85, "rationale": "Struck-through \"Compare at\" price." }
+      ]
+    }
+  }
+}

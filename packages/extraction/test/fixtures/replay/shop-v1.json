@@ -1,0 +1,13 @@
+{
+  "note": "Hand-authored in the recorded replay format (no live LLM call was made). Node ids match buildDigest(shop-v1.html).",
+  "model": "hand-authored",
+  "responses": {
+    "discover/127.0.0.1": {
+      "candidates": [
+        { "nodeId": "n2", "meaning": "current", "confidence": 0.93, "rationale": "Inside the product price box, labelled \"Now\", not struck through." },
+        { "nodeId": "n3", "meaning": "was", "confidence": 0.9, "rationale": "Struck-through <del> next to the current price: the previous price." },
+        { "nodeId": "n4", "meaning": "current", "confidence": 0.1, "rationale": "Price of a related item in the sidebar, not this product." }
+      ]
+    }
+  }
+}

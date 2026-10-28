@@ -21,3 +21,10 @@
   - The race test treated one empty SKIP LOCKED lease as "queue drained" under machine load.
   - Turbopack could not resolve `.js` relative imports in workspace packages; they are now extensionless.
 - Open for later: chart x-axis padding when all points fall in a short span; Node SEA binary; web UI auth (single-tenant for now).
+
+## M3-M4 review
+- M2 gaps closed: local collector ran live (installed Chrome, device maddox-desktop); observation collector_id = device. Chart: fitted time domain + step-after.
+- M3: packages/llm (anthropic, openrouter, claude-cli, replay, disk cache), packages/extraction (digest, heuristics, LLM candidates, heal decision), paste-URL flow with crops, healing payload on parse_error, healTick, selector_history UI, proposal accept/reject.
+- M4: rule evaluation (debounce, $25 step, quiet hours), transactional idempotent alert recording, email/ntfy/web push with delivery retry, alert rules/history/settings UI.
+- No LLM calls made (owner constraint): LLM paths use hand-authored replay fixtures, labeled in README.
+- typecheck, test (189 tests), build all green.

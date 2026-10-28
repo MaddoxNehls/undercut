@@ -19,3 +19,11 @@ export function createDb(url: string | undefined = process.env.DATABASE_URL, opt
 export async function inTransaction<T>(db: Db, fn: (tx: Db) => Promise<T>): Promise<T> {
   return (await db.begin((tx) => fn(tx as unknown as Db))) as T;
 }
+
+/**
+ * A plain JSON value for `sql.json` (drops `undefined` fields). Passing a pre-stringified value
+ * instead would be serialized again and stored as a JSON string, not an object.
+ */
+export function toJson(value: unknown): postgres.JSONValue {
+  return JSON.parse(JSON.stringify(value)) as postgres.JSONValue;
+}

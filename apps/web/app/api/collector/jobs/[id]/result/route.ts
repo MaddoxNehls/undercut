@@ -13,7 +13,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
   try {
     const outcome = await submitResult(db(), collector, id, result, {
-      hooks: observationHooks,
+      hooks: observationHooks(),
       onHookError: (hook, err) => console.error(`observation hook ${hook} failed`, err),
     });
     return Response.json({ accepted: true, observationId: outcome.observationId } satisfies JobResultResponse);

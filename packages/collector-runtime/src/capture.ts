@@ -1,5 +1,6 @@
 import { classifyCapture, type JobResult, type LeasedJob } from '@undercut/core';
 import { extractPrice } from '@undercut/core/extract';
+import { healingPayload } from '@undercut/extraction';
 import type { BrowserContext } from 'playwright';
 
 export interface CaptureOptions {
@@ -20,7 +21,7 @@ export async function capture(context: BrowserContext, job: LeasedJob, options: 
   try {
     const response = await page.goto(job.url, { waitUntil: 'domcontentloaded', timeout: options.navigationTimeoutMs ?? 45_000 });
     const httpStatus = response?.status() ?? null;
-    if (httpStatus === null || httpStatus < 400) {
+    if ((httpStatus === null || httpStatus < 400) && job.extraction.kind === 'selector') {
       // A miss is fine here; the classifier decides whether a missing price means "blocked".
       await page
         .waitForSelector(job.extraction.selector, { state: 'attached', timeout: options.selectorTimeoutMs ?? 10_000 })
@@ -37,8 +38,12 @@ export async function capture(context: BrowserContext, job: LeasedJob, options: 
       case 'ok':
         return { status: 'ok', price: verdict.price, snippet: verdict.snippet.slice(0, SNIPPET_MAX), ...meta };
       case 'blocked':
-      case 'parse_error':
-        return { status: verdict.status, reason: verdict.reason, snippet: verdict.snippet.slice(0, SNIPPET_MAX), ...meta };
+        return { status: 'blocked', reason: verdict.reason, snippet: verdict.snippet.slice(0, SNIPPET_MAX), ...meta };
+      case 'parse_error': {
+        // The page loaded but the rule failed: ship what the server needs to heal the selector.
+        const healing = await healingPayload(html, job.parse).catch(() => undefined);
+        return { status: 'parse_error', reason: verdict.reason, snippet: verdict.snippet.slice(0, SNIPPET_MAX), ...(healing ? { healing } : {}), ...meta };
+      }
       case 'transient':
         return { status: 'error', leaseId: job.leaseId, error: verdict.reason };
     }

@@ -34,12 +34,37 @@ export interface ParseOptions {
 }
 
 /**
- * How to find the price on a page. M1 ships `selector`; M3 adds an LLM-derived rule
- * (still ultimately a selector, plus provenance), which is why this is a union.
+ * How to find the price on a page: a CSS selector (optionally reading an attribute), or the
+ * page's schema.org JSON-LD offer. LLM-derived rules are still selectors; provenance lives in
+ * the selector history, not in the rule.
  */
-export type ExtractionRule = {
-  kind: 'selector';
-  selector: string;
-  /** Read this attribute instead of text content, e.g. `content` on a <meta itemprop="price">. */
-  attribute?: string | undefined;
-};
+export type ExtractionRule =
+  | {
+      kind: 'selector';
+      selector: string;
+      /** Read this attribute instead of text content, e.g. `content` on a <meta itemprop="price">. */
+      attribute?: string | undefined;
+    }
+  | {
+      kind: 'json-ld';
+      /** Which offer field to read; `lowPrice` suits AggregateOffer ranges. */
+      field: 'price' | 'lowPrice';
+    };
+
+/** What a price on the page means. Only `current` prices should feed alerts. */
+export type PriceMeaning = 'current' | 'was' | 'per_unit' | 'total';
+export const PRICE_MEANINGS: readonly PriceMeaning[] = ['current', 'was', 'per_unit', 'total'];
+
+/** One-line form of a rule for display and the edit form: a CSS selector, or "json-ld". */
+export function ruleToText(rule: ExtractionRule): string {
+  if (rule.kind === 'json-ld') return rule.field === 'price' ? 'json-ld' : `json-ld:${rule.field}`;
+  return rule.selector;
+}
+
+/** Inverse of `ruleToText`. */
+export function ruleFromText(text: string, attribute?: string): ExtractionRule {
+  const trimmed = text.trim();
+  if (trimmed === 'json-ld') return { kind: 'json-ld', field: 'price' };
+  if (trimmed === 'json-ld:lowPrice') return { kind: 'json-ld', field: 'lowPrice' };
+  return attribute ? { kind: 'selector', selector: trimmed, attribute } : { kind: 'selector', selector: trimmed };
+}

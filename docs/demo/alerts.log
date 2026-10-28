@@ -1,0 +1,6 @@
+  job 16c7bcea ok {"url":"https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html","price":51.77,"currency":"GBP"}
+  job 022e5230 ok {"url":"https://books.toscrape.com/catalogue/a-light-in-the-attic_1000/index.html","price":51.77,"currency":"GBP"}
+dispatch: { sent: 2, retried: 0, failed: 0 }
+alert: £51.77 is at or below your target of 55 email:sent ntfy:sent
+mailpit latest: Price alert: A Light in the Attic | £51.77 is at or below your target of 55 http://localhost:3210/watches/d8fb0f11-25f5-4485-9f05-73c3d2318fa3
+ntfy latest: {"id":"2ERWJFqg1Hej","time":1793163470,"expires":1793206670,"event":"message","topic":"undercut-demo","title":"Price alert: A Light in the Attic","message":"£51.77 is at or below your target of 55","tags":["moneybag"],"click":"http://localhost:3210/watches/d8fb0f11-25f5-4485-9f05-73c3d2318fa3"}

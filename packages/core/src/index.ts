@@ -32,3 +32,14 @@ export type {
 } from './alerts/hooks';
 export { domainOf, isHttpUrl } from './url';
 export * from './protocol';
+export {
+  evaluateRule,
+  stableLevels,
+  medianOf,
+  deliverAt,
+  DEFAULT_ALERT_POLICY,
+  type AlertPolicy,
+  type RuleState,
+  type RuleEvaluation,
+  type QuietHours,
+} from './alerts/evaluate';

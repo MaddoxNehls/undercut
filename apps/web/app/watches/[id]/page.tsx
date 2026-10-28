@@ -1,4 +1,5 @@
-import { getWatch, listObservations, listRecentJobs, priceHistory, type JobSummary, type ObservationLogEntry } from '@undercut/db';
+import { formatPrice, ruleToText } from '@undercut/core';
+import { getWatch, listObservations, listRecentJobs, listSelectorHistory, priceHistory, type JobSummary, type ObservationLogEntry, type SelectorChange } from '@undercut/db';
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
@@ -11,7 +12,8 @@ import { SubmitButton } from '@/components/submit-button';
 import { db } from '@/lib/db';
 import { describePrice, intervalLabel, priceParts } from '@/lib/format';
 import { isUuid } from '@/lib/ids';
-import { checkNowAction, deleteWatchAction, setActiveAction } from '../actions';
+import { SelectorHistory } from '@/components/selector-history';
+import { checkNowAction, decideProposalAction, deleteWatchAction, setActiveAction } from '../actions';
 
 export const dynamic = 'force-dynamic';
 
@@ -34,7 +36,13 @@ export default async function WatchPage({ params, searchParams }: Props) {
   const detail = await load(id);
   if (!detail) notFound();
   const { watch, variants, domain } = detail;
-  const [history, log, jobs] = await Promise.all([priceHistory(db(), id), listObservations(db(), id, 100), listRecentJobs(db(), id, 12)]);
+  const [history, log, jobs, selectorChanges] = await Promise.all([
+    priceHistory(db(), id),
+    listObservations(db(), id, 100),
+    listRecentJobs(db(), id, 12),
+    listSelectorHistory(db(), id),
+  ]);
+  const proposal = selectorChanges.find((c) => c.status === 'proposed');
 
   const latestOk = log.find((o) => o.status === 'ok' && o.price !== null);
   const learned = watch.routeOverride === 'auto';
@@ -66,7 +74,7 @@ export default async function WatchPage({ params, searchParams }: Props) {
             <Meta label="Site">{watch.domain}</Meta>
             <Meta label="Checks">{watch.active ? intervalLabel(watch.intervalMinutes) : 'Paused'}</Meta>
             <Meta label="Selector">
-              <code className="text-[13px]">{watch.extraction.selector}</code>
+              <code className="text-[13px]">{ruleToText(watch.extraction)}</code>
             </Meta>
             <Meta label="Collected by">
               <RouteBadge route={route} learned={learned} />
@@ -82,6 +90,9 @@ export default async function WatchPage({ params, searchParams }: Props) {
             <form action={checkNowAction.bind(null, id)}>
               <SubmitButton pendingLabel="Queuing…">Check now</SubmitButton>
             </form>
+            <Link href={`/watches/${id}/alerts`} className="rounded-md border border-rule-strong bg-surface px-3 py-1.5 text-sm font-semibold hover:border-ink-2">
+              Alerts
+            </Link>
             <Link href={`/watches/${id}/edit`} className="rounded-md border border-rule-strong bg-surface px-3 py-1.5 text-sm font-semibold hover:border-ink-2">
               Edit
             </Link>
@@ -117,6 +128,8 @@ export default async function WatchPage({ params, searchParams }: Props) {
         />
       </header>
 
+      {watch.reviewReason && <ReviewBanner watchId={id} reason={watch.reviewReason} proposal={proposal} currency={currency} />}
+
       <section className="mt-10 rounded-lg border border-rule bg-surface p-4 sm:p-6" aria-labelledby="history-heading">
         <div className="mb-4 flex items-baseline justify-between gap-4">
           <h2 id="history-heading" className="text-lg font-semibold">
@@ -134,7 +147,39 @@ export default async function WatchPage({ params, searchParams }: Props) {
         <ObservationLog entries={showFullLog ? log : log.slice(0, LOG_PREVIEW)} total={log.length} watchId={id} />
         <RecentJobs jobs={jobs} />
       </div>
+
+      {selectorChanges.length > 0 && <SelectorHistory changes={selectorChanges} currency={currency} />}
     </>
+  );
+}
+
+function ReviewBanner({ watchId, reason, proposal, currency }: { watchId: string; reason: string; proposal: SelectorChange | undefined; currency: string | null }) {
+  return (
+    <section role="alert" className="mt-8 rounded-lg border border-warning bg-warning-wash p-4 sm:p-5">
+      <h2 className="font-semibold">The price selector stopped working and needs your review</h2>
+      <p className="mt-1 text-sm text-ink-2">{reason}.</p>
+      {proposal ? (
+        <>
+          <p className="mt-3 text-sm">
+            Proposed: <code className="text-[13px]">{ruleToText(proposal.newRule)}</code>, which reads{' '}
+            <strong className="figure">{proposal.newValue === null ? 'nothing' : formatPrice(proposal.newValue, currency)}</strong>
+            {proposal.oldValue !== null && <> (last known {formatPrice(proposal.oldValue, currency)})</>}.
+          </p>
+          <div className="mt-3 flex gap-2">
+            <form action={decideProposalAction.bind(null, watchId, proposal.id, true)}>
+              <SubmitButton>Use the new selector</SubmitButton>
+            </form>
+            <form action={decideProposalAction.bind(null, watchId, proposal.id, false)}>
+              <SubmitButton variant="secondary">Keep the current one</SubmitButton>
+            </form>
+          </div>
+        </>
+      ) : (
+        <p className="mt-3 text-sm">
+          No replacement could be found automatically. <Link href={`/watches/${watchId}/edit`} className="font-medium text-accent hover:underline">Edit the selector</Link>.
+        </p>
+      )}
+    </section>
   );
 }
 

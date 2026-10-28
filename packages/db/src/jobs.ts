@@ -10,7 +10,7 @@ import {
   type ObservationStatus,
   type RoutingConfig,
 } from '@undercut/core';
-import { inTransaction, type Db } from './client';
+import { inTransaction, toJson, type Db } from './client';
 import type { Collector, Job } from './types';
 
 export const DEFAULT_LEASE_SECONDS = 120;
@@ -213,12 +213,13 @@ async function recordObservation(tx: Db, job: LockedJob, kind: CollectorKind, re
     INSERT INTO observations (
       job_id, variant_id, domain, collector_id, collector_kind, is_probe, status,
       price, currency, price_kind, price_max, period, reason, raw_snippet,
-      http_status, final_url, duration_ms, as_of
+      http_status, final_url, duration_ms, as_of, healing
     ) VALUES (
       ${job.id}, ${job.variantId}, ${job.domain}, ${job.leasedBy}, ${kind}, ${job.isProbe}, ${result.status},
       ${price?.amount ?? null}, ${price?.currency ?? null}, ${price?.kind ?? null}, ${price?.max ?? null},
       ${price?.period ?? null}, ${reason}, ${result.snippet},
-      ${result.httpStatus}, ${result.finalUrl}, ${result.durationMs}, ${result.asOf}
+      ${result.httpStatus}, ${result.finalUrl}, ${result.durationMs}, ${result.asOf},
+      ${result.status === 'parse_error' && result.healing ? tx.json(toJson(result.healing)) : null}
     )
     RETURNING id`;
   if (!row) throw new Error('observation insert returned no row');

@@ -16,7 +16,10 @@
   },
   "dependencies": {
     "@undercut/core": "workspace:*",
-    "postgres": "^3.4.9"
+    "postgres": "^3.4.9",
+    "@undercut/extraction": "workspace:*",
+    "@undercut/llm": "workspace:*",
+    "@undercut/notify": "workspace:*"
   },
   "devDependencies": {
     "vitest": "^5.0.5"
