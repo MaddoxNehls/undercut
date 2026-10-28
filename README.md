@@ -21,6 +21,23 @@ The fix was a hybrid design, and Undercut turns it into a product:
   rate on a domain crosses a threshold, the domain moves to local collectors, and the cloud is
   re-probed periodically in case the block lifts. Nobody has to configure which sites block bots.
 
+## Highlights
+
+- **Exactly-once job leasing** on Postgres (`FOR UPDATE SKIP LOCKED`, lease expiry, idempotency
+  keys). A race test runs 12 concurrent lease loops from two connection pools over 60 jobs: every
+  job is leased once, and a late result from an expired lease is rejected with 409.
+- **Learned routing:** a domain moves from cloud to local collectors when its cloud block rate
+  crosses a threshold, with periodic cloud re-probes ([policy](#learned-routing-policy)).
+- **Heuristics first, LLM second:** JSON-LD, microdata and OpenGraph find most prices for free.
+  The LLM is consulted only when they disagree, and every candidate is checked against the live
+  page before it's offered.
+- **Self-healing selectors** that auto-apply a fix only when the value keeps its meaning and stays
+  within 15% of the last price; anything else is flagged for review.
+- **Alerts that survive flapping prices.** Replaying the real Cancun sequence
+  $606 → $499 → $517 → $491 fires nothing, because no two consecutive checks agree. Without the
+  two-check rule it would have alerted on a $499 that vanished an hour later. 8 concurrent
+  evaluations of one observation produce exactly 1 alert.
+
 ## Status
 
 | Milestone | Scope | State |
@@ -28,7 +45,7 @@ The fix was a hybrid design, and Undercut turns it into a product:
 | M1 | Data model, watch CRUD, cloud collector, price history | Done |
 | M2 | Local collector, job leasing, device auth | Done |
 | M3 | LLM-assisted selector extraction and self-healing | Done (LLM paths verified with recorded fixtures; no live LLM calls yet) |
-| M4 | Alert engine and channels | Done: email, ntfy, Web Push |
+| M4 | Alert engine and channels | Done: email and ntfy verified end to end; Web Push implemented but not yet tested with a real browser subscription |
 | M5 | Learned routing dashboard | Routing is live; the Devices page shows per-domain block rates |
 | M6 | Deploy, showcase migration, write-up | Not started |
 
